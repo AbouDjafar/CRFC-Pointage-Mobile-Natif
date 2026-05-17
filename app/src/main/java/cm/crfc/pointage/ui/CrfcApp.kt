@@ -1,10 +1,7 @@
 package cm.crfc.pointage.ui
 
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideIntoContainer
-import androidx.compose.animation.slideOutOfContainer
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -118,28 +115,16 @@ fun CrfcApp(container: AppContainer) {
                 navController = navController,
                 startDestination = if (currentUser == null) Routes.LOGIN else Routes.TAB_REPORT,
                 enterTransition = {
-                    slideIntoContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(320)
-                    ) + fadeIn(animationSpec = tween(260))
+                    fadeIn(animationSpec = tween(260))
                 },
                 exitTransition = {
-                    slideOutOfContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(260)
-                    ) + fadeOut(animationSpec = tween(200))
+                    fadeOut(animationSpec = tween(200))
                 },
                 popEnterTransition = {
-                    slideIntoContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(320)
-                    ) + fadeIn(animationSpec = tween(260))
+                    fadeIn(animationSpec = tween(260))
                 },
                 popExitTransition = {
-                    slideOutOfContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(260)
-                    ) + fadeOut(animationSpec = tween(200))
+                    fadeOut(animationSpec = tween(200))
                 }
             ) {
                 composable(Routes.LOGIN) {

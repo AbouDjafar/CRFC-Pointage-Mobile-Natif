@@ -157,7 +157,7 @@ fun ReportDetailScreen(
                         currentReport.absenceEntries.forEach { entry ->
                             val subtitle = listOf(
                                 reasons.firstOrNull { it.id == entry.reasonId }?.label ?: "Motif",
-                                entry.comment.takeIf { it.isNotBlank() }
+                                entry.comment?.takeIf { it.isNotBlank() }
                             ).filterNotNull().joinToString(" - ")
                             ClickRow(
                                 title = employees.firstOrNull { it.id == entry.employeeId }?.fullName ?: "Inconnu",

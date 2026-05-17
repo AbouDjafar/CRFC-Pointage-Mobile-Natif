@@ -259,7 +259,7 @@ fun ReportScreen(
                                 val reasonLabel = reasons.firstOrNull { it.id == entry.reasonId }?.label ?: "Motif inconnu"
                                 ClickRow(
                                     title = employeeName,
-                                    subtitle = listOf(reasonLabel, entry.comment.takeIf { it.isNotBlank() })
+                                    subtitle = listOf(reasonLabel, entry.comment?.takeIf { it.isNotBlank() })
                                         .filterNotNull()
                                         .joinToString(" - "),
                                     tint = extra.absent,
