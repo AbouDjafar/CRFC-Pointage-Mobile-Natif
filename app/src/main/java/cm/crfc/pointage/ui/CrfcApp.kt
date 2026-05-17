@@ -1,5 +1,11 @@
 package cm.crfc.pointage.ui
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideIntoContainer
+import androidx.compose.animation.slideOutOfContainer
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -11,7 +17,6 @@ import androidx.compose.material.icons.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -28,13 +33,13 @@ import androidx.navigation.compose.rememberNavController
 import cm.crfc.pointage.AppContainer
 import cm.crfc.pointage.ui.auth.LoginScreen
 import cm.crfc.pointage.ui.auth.RegisterScreen
+import cm.crfc.pointage.ui.components.BottomBarChrome
 import cm.crfc.pointage.ui.home.EmployeesScreen
 import cm.crfc.pointage.ui.home.HistoryScreen
 import cm.crfc.pointage.ui.home.ReportDetailScreen
 import cm.crfc.pointage.ui.home.ReportScreen
 import cm.crfc.pointage.ui.home.SettingsScreen
 import cm.crfc.pointage.ui.home.StatsScreen
-import cm.crfc.pointage.ui.theme.LocalCrfcExtraColors
 
 object Routes {
     const val LOGIN = "login"
@@ -44,10 +49,13 @@ object Routes {
     const val TAB_STATS = "tabs/stats"
     const val TAB_EMPLOYEES = "tabs/employees"
     const val TAB_SETTINGS = "tabs/settings"
-    const val REPORT_DETAIL = "report/{id}"
 }
 
-private data class TabItem(val route: String, val label: String, val icon: @Composable () -> Unit)
+private data class TabItem(
+    val route: String,
+    val label: String,
+    val icon: @Composable () -> Unit
+)
 
 @Composable
 fun CrfcApp(container: AppContainer) {
@@ -55,7 +63,6 @@ fun CrfcApp(container: AppContainer) {
     val currentUser by container.authRepository.observeCurrentUser().collectAsStateWithLifecycle(initialValue = null)
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val extra = LocalCrfcExtraColors.current
 
     val tabs = listOf(
         TabItem(Routes.TAB_REPORT, "Rapport", { Icon(Icons.Rounded.ReceiptLong, contentDescription = null) }),
@@ -79,9 +86,10 @@ fun CrfcApp(container: AppContainer) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (currentRoute?.startsWith("tabs/") == true && currentUser != null) {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                BottomBarChrome {
                     tabs.forEach { tab ->
                         val selected = backStackEntry?.destination?.hierarchy?.any { it.route == tab.route } == true
                         NavigationBarItem(
@@ -108,7 +116,31 @@ fun CrfcApp(container: AppContainer) {
         ) {
             NavHost(
                 navController = navController,
-                startDestination = if (currentUser == null) Routes.LOGIN else Routes.TAB_REPORT
+                startDestination = if (currentUser == null) Routes.LOGIN else Routes.TAB_REPORT,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(320)
+                    ) + fadeIn(animationSpec = tween(260))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(260)
+                    ) + fadeOut(animationSpec = tween(200))
+                },
+                popEnterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(320)
+                    ) + fadeIn(animationSpec = tween(260))
+                },
+                popExitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(260)
+                    ) + fadeOut(animationSpec = tween(200))
+                }
             ) {
                 composable(Routes.LOGIN) {
                     LoginScreen(
@@ -159,12 +191,12 @@ fun CrfcApp(container: AppContainer) {
                         SettingsScreen(
                             user = it,
                             authRepository = container.authRepository,
-                        onLoggedOut = {
-                            navController.navigate(Routes.LOGIN) {
-                                popUpTo(navController.graph.id)
+                            onLoggedOut = {
+                                navController.navigate(Routes.LOGIN) {
+                                    popUpTo(navController.graph.id)
+                                }
                             }
-                        }
-                    )
+                        )
                     }
                 }
                 composable("report/{id}") { backStack ->

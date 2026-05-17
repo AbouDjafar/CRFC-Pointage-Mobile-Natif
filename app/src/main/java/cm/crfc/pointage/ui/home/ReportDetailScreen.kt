@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Delete
@@ -32,10 +30,14 @@ import cm.crfc.pointage.data.ReportRepository
 import cm.crfc.pointage.model.ReportStatus
 import cm.crfc.pointage.model.User
 import cm.crfc.pointage.model.UserRole
+import cm.crfc.pointage.ui.components.ClickRow
 import cm.crfc.pointage.ui.components.CrfcCard
 import cm.crfc.pointage.ui.components.EmptyState
 import cm.crfc.pointage.ui.components.HeaderCard
 import cm.crfc.pointage.ui.components.LabelValue
+import cm.crfc.pointage.ui.components.ScreenList
+import cm.crfc.pointage.ui.components.SectionTitle
+import cm.crfc.pointage.ui.components.StatusBadge
 import cm.crfc.pointage.ui.theme.LocalCrfcExtraColors
 import cm.crfc.pointage.util.formatDateTime
 import cm.crfc.pointage.util.formatDisplayDate
@@ -80,119 +82,136 @@ fun ReportDetailScreen(
 
     val author = users.firstOrNull { it.id == currentReport.createdBy } ?: user
 
-    Column(
-        modifier = Modifier.verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        HeaderCard(
-            title = formatDisplayDate(currentReport.date),
-            subtitle = if (currentReport.status == ReportStatus.FINALIZED) "Rapport finalise" else "Rapport brouillon",
-            actions = {
-                Row {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Rounded.ArrowBack, contentDescription = null, tint = Color.White)
-                    }
-                    IconButton(onClick = {
-                        val result = exportService.exportPdf(currentReport, employees, reasons, author)
-                        if (!result.success) Toast.makeText(context, result.error, Toast.LENGTH_LONG).show()
-                    }) {
-                        Icon(Icons.Rounded.Share, contentDescription = null, tint = Color.White)
-                    }
-                }
-            }
-        )
-
-        CrfcCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text("Meta-donnees", style = MaterialTheme.typography.titleMedium)
-            Column(
-                modifier = Modifier.padding(top = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                LabelValue("Redige par", author.fullName)
-                LabelValue("Fonction", author.jobTitle)
-                LabelValue("Modifie le", formatDateTime(currentReport.updatedAt))
-            }
-        }
-
-        CrfcCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text("Retardataires", style = MaterialTheme.typography.titleMedium, color = extra.late)
-            Column(
-                modifier = Modifier.padding(top = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (currentReport.lateEntries.isEmpty()) {
-                    Text("Aucun retardataire", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    currentReport.lateEntries.forEach { entry ->
-                        Text(
-                            "${employees.firstOrNull { it.id == entry.employeeId }?.fullName ?: "Inconnu"} - ${entry.arrivalTime} - ${entry.minutesLate} min"
-                        )
-                    }
-                }
-            }
-        }
-
-        CrfcCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text("Absents", style = MaterialTheme.typography.titleMedium, color = extra.absent)
-            Column(
-                modifier = Modifier.padding(top = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (currentReport.absenceEntries.isEmpty()) {
-                    Text("Aucun absent", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    currentReport.absenceEntries.forEach { entry ->
-                        Text(
-                            "${employees.firstOrNull { it.id == entry.employeeId }?.fullName ?: "Inconnu"} - ${reasons.firstOrNull { it.id == entry.reasonId }?.label ?: "Motif"}"
-                        )
-                    }
-                }
-            }
-        }
-
-        CrfcCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-            LabelValue("Visiteurs", currentReport.visitorCount.toString())
-        }
-
-        CrfcCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (currentReport.status == ReportStatus.DRAFT) {
-                    Button(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            CoroutineScope(Dispatchers.Main).launch {
-                                reportRepository.finalizeReport(currentReport)
-                            }
+    ScreenList {
+        item {
+            HeaderCard(
+                title = formatDisplayDate(currentReport.date),
+                subtitle = "Detail du rapport",
+                actions = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Rounded.ArrowBack, contentDescription = null, tint = Color.White)
                         }
-                    ) {
-                        Text("Finaliser")
-                    }
-                } else if (user.role == UserRole.ADMIN) {
-                    OutlinedButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            CoroutineScope(Dispatchers.Main).launch {
-                                reportRepository.reopenReport(currentReport)
-                            }
+                        IconButton(onClick = {
+                            val result = exportService.exportPdf(currentReport, employees, reasons, author)
+                            if (!result.success) Toast.makeText(context, result.error, Toast.LENGTH_LONG).show()
+                        }) {
+                            Icon(Icons.Rounded.Share, contentDescription = null, tint = Color.White)
                         }
-                    ) {
-                        Icon(Icons.Rounded.LockOpen, contentDescription = null)
-                        Text("Reouvrir", modifier = Modifier.padding(start = 8.dp))
                     }
                 }
+            )
+        }
 
-                if (user.role == UserRole.ADMIN) {
-                    OutlinedButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            CoroutineScope(Dispatchers.Main).launch {
-                                reportRepository.deleteReport(currentReport.id)
-                                onBack()
-                            }
+        item {
+            CrfcCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+                StatusBadge(
+                    text = if (currentReport.status == ReportStatus.FINALIZED) "Rapport finalise" else "Rapport brouillon",
+                    color = if (currentReport.status == ReportStatus.FINALIZED) extra.success else extra.warning
+                )
+                Column(
+                    modifier = Modifier.padding(top = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    LabelValue("Redige par", author.fullName)
+                    LabelValue("Fonction", author.jobTitle)
+                    LabelValue("Modifie le", formatDateTime(currentReport.updatedAt))
+                    LabelValue("Visiteurs", currentReport.visitorCount.toString())
+                }
+            }
+        }
+
+        item {
+            CrfcCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+                SectionTitle("Retardataires", currentReport.lateEntries.size)
+                Column(
+                    modifier = Modifier.padding(top = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (currentReport.lateEntries.isEmpty()) {
+                        EmptyState("Aucun retardataire", "Aucun retard n'a ete enregistre pour cette date.")
+                    } else {
+                        currentReport.lateEntries.forEach { entry ->
+                            ClickRow(
+                                title = employees.firstOrNull { it.id == entry.employeeId }?.fullName ?: "Inconnu",
+                                subtitle = "${entry.arrivalTime} - ${entry.minutesLate} min",
+                                tint = extra.late,
+                                onClick = {}
+                            )
                         }
-                    ) {
-                        Icon(Icons.Rounded.Delete, contentDescription = null)
-                        Text("Supprimer", modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        }
+
+        item {
+            CrfcCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+                SectionTitle("Absents", currentReport.absenceEntries.size)
+                Column(
+                    modifier = Modifier.padding(top = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (currentReport.absenceEntries.isEmpty()) {
+                        EmptyState("Aucun absent", "Aucune absence n'a ete enregistree pour cette date.")
+                    } else {
+                        currentReport.absenceEntries.forEach { entry ->
+                            val subtitle = listOf(
+                                reasons.firstOrNull { it.id == entry.reasonId }?.label ?: "Motif",
+                                entry.comment.takeIf { it.isNotBlank() }
+                            ).filterNotNull().joinToString(" - ")
+                            ClickRow(
+                                title = employees.firstOrNull { it.id == entry.employeeId }?.fullName ?: "Inconnu",
+                                subtitle = subtitle,
+                                tint = extra.absent,
+                                onClick = {}
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            CrfcCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (currentReport.status == ReportStatus.DRAFT) {
+                        Button(
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    reportRepository.finalizeReport(currentReport)
+                                }
+                            }
+                        ) {
+                            Text("Finaliser")
+                        }
+                    } else if (user.role == UserRole.ADMIN) {
+                        OutlinedButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    reportRepository.reopenReport(currentReport)
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Rounded.LockOpen, contentDescription = null)
+                            Text("Reouvrir", modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+
+                    if (user.role == UserRole.ADMIN) {
+                        OutlinedButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    reportRepository.deleteReport(currentReport.id)
+                                    onBack()
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Rounded.Delete, contentDescription = null)
+                            Text("Supprimer", modifier = Modifier.padding(start = 8.dp))
+                        }
                     }
                 }
             }

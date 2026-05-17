@@ -15,11 +15,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.PersonAdd
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -28,6 +35,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -41,12 +49,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import cm.crfc.pointage.R
 import cm.crfc.pointage.data.AuthRepository
+import cm.crfc.pointage.ui.components.AvatarCircle
 import cm.crfc.pointage.ui.theme.LocalCrfcExtraColors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,50 +79,78 @@ fun LoginScreen(
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(extra.headerStart, extra.headerEnd)))
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.bg_pattern),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            alpha = 0.1f
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+                .padding(horizontal = 20.dp, vertical = 28.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.bg_pattern),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(210.dp)
-                    .clip(RoundedCornerShape(28.dp)),
-                contentScale = ContentScale.Crop
+            AuthHero(
+                title = "CRFC Pointage",
+                subtitle = "Application mobile native de pointage"
             )
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
-                shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    .padding(top = 18.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Column(modifier = Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Surface(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), shape = CircleShape) {
-                            Image(
-                                painter = painterResource(R.drawable.logo_crfc_pointage),
-                                contentDescription = null,
-                                modifier = Modifier.padding(12.dp).size(28.dp)
-                            )
-                        }
-                        Column {
-                            Text("CRFC Pointage", style = MaterialTheme.typography.headlineSmall)
-                            Text("Connexion a l'espace de pointage", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Connexion", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            "Renseigne ton identifiant et ton mot de passe pour acceder a l'espace de pointage.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    AuthField(loginId, { loginId = it }, "Identifiant (email ou login)", Icons.Rounded.Person)
-                    AuthField(password, { password = it }, "Mot de passe", Icons.Rounded.Lock, secure = true)
-                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+
+                    AuthField(
+                        value = loginId,
+                        onValueChange = { loginId = it },
+                        label = "Identifiant ou email",
+                        icon = Icons.Rounded.Person
+                    )
+                    AuthField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = "Mot de passe",
+                        icon = Icons.Rounded.Lock,
+                        secure = true
+                    )
+
+                    AnimatedVisibility(
+                        visible = error != null,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Text(
+                            text = error.orEmpty(),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
                     Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
                         onClick = {
                             CoroutineScope(Dispatchers.Main).launch {
                                 error = null
@@ -123,9 +162,17 @@ fun LoginScreen(
                             }
                         }
                     ) {
-                        Text("Se connecter", modifier = Modifier.padding(vertical = 6.dp))
+                        Text("Se connecter")
                     }
-                    TextButton(onClick = onRegister, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+
+                    OutlinedButton(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.secondary),
+                        onClick = onRegister
+                    ) {
                         Text("Creer un compte agent")
                     }
                 }
@@ -150,55 +197,236 @@ fun RegisterScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var success by remember { mutableStateOf<String?>(null) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(extra.headerStart, extra.headerEnd)))
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp)
     ) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.Rounded.ArrowBack, contentDescription = null, tint = androidx.compose.ui.graphics.Color.White)
-        }
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        Image(
+            painter = painterResource(id = R.drawable.bg_pattern),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            alpha = 0.09f
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(modifier = Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Nouveau compte agent", style = MaterialTheme.typography.headlineSmall)
-                Text("La partie avant @ servira aussi de login court.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                AuthField(firstName, { firstName = it }, "Prenom", Icons.Rounded.Person)
-                AuthField(lastName, { lastName = it }, "Nom", Icons.Rounded.PersonAdd)
-                AuthField(email, { email = it }, "Email", Icons.Rounded.Person)
-                AuthField(jobTitle, { jobTitle = it }, "Fonction", Icons.Rounded.Work)
-                AuthField(password, { password = it }, "Mot de passe", Icons.Rounded.Lock, secure = true)
-                AuthField(confirmPassword, { confirmPassword = it }, "Confirmer le mot de passe", Icons.Rounded.Lock, secure = true)
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                success?.let { Text(it, color = MaterialTheme.colorScheme.tertiary) }
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    onClick = {
-                        CoroutineScope(Dispatchers.Main).launch {
-                            error = null
-                            success = null
-                            if (password != confirmPassword) {
-                                error = "Les mots de passe ne correspondent pas."
-                                return@launch
-                            }
-                            val result = authRepository.register(firstName, lastName, email, jobTitle, password)
-                            if (result.success) {
-                                success = "Compte cree avec succes. Vous pouvez maintenant vous connecter."
-                                onRegistered()
-                            } else {
-                                error = result.error
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp)),
+                color = Color.White.copy(alpha = 0.08f)
+            ) {
+                Box(modifier = Modifier.padding(18.dp)) {
+                    Image(
+                        painter = painterResource(id = R.drawable.bg_pattern),
+                        contentDescription = null,
+                        modifier = Modifier.matchParentSize(),
+                        contentScale = ContentScale.Crop,
+                        alpha = 0.12f
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Surface(
+                            modifier = Modifier.size(42.dp),
+                            shape = CircleShape,
+                            color = Color.White.copy(alpha = 0.14f)
+                        ) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.Rounded.ArrowBack, contentDescription = null, tint = Color.White)
                             }
                         }
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                "Nouveau compte",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Color.White
+                            )
+                            Text(
+                                "Creer un compte agent pour acceder au pointage CRFC.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.78f)
+                            )
+                        }
                     }
-                ) {
-                    Text("Creer le compte", modifier = Modifier.padding(vertical = 6.dp))
                 }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        AuthField(
+                            value = firstName,
+                            onValueChange = { firstName = it },
+                            label = "Prenom",
+                            icon = Icons.Rounded.Person,
+                            modifier = Modifier.weight(1f)
+                        )
+                        AuthField(
+                            value = lastName,
+                            onValueChange = { lastName = it },
+                            label = "Nom",
+                            icon = Icons.Rounded.Person,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    AuthField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = "Email professionnel",
+                        icon = Icons.Rounded.Email
+                    )
+                    AuthField(
+                        value = jobTitle,
+                        onValueChange = { jobTitle = it },
+                        label = "Fonction",
+                        icon = Icons.Rounded.Work
+                    )
+                    AuthField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = "Mot de passe",
+                        icon = Icons.Rounded.Lock,
+                        secure = true
+                    )
+                    AuthField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = "Confirmation",
+                        icon = Icons.Rounded.Lock,
+                        secure = true
+                    )
+
+                    AnimatedVisibility(
+                        visible = success != null,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Text(
+                            text = success.orEmpty(),
+                            color = extra.success,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    AnimatedVisibility(
+                        visible = error != null,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Text(
+                            text = error.orEmpty(),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                        onClick = {
+                            CoroutineScope(Dispatchers.Main).launch {
+                                error = null
+                                success = null
+                                if (password != confirmPassword) {
+                                    error = "Les mots de passe ne correspondent pas."
+                                    return@launch
+                                }
+                                val result = authRepository.register(firstName, lastName, email, jobTitle, password)
+                                if (result.success) {
+                                    success = "Compte cree avec succes. Tu peux maintenant te connecter."
+                                    onRegistered()
+                                } else {
+                                    error = result.error
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Creer le compte")
+                    }
+
+                    TextButton(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        onClick = onBack
+                    ) {
+                        Text("Deja un compte ? Se connecter")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AuthHero(
+    title: String,
+    subtitle: String
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp)),
+        color = Color.White.copy(alpha = 0.08f)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(210.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.bg_pattern),
+                contentDescription = null,
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop,
+                alpha = 0.14f
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Surface(
+                    modifier = Modifier.size(88.dp),
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.16f)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        AvatarCircle(
+                            text = "CR",
+                            size = 64,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+                Text(
+                    text = title,
+                    modifier = Modifier.padding(top = 16.dp),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White
+                )
+                Text(
+                    text = subtitle,
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
             }
         }
     }
@@ -210,16 +438,32 @@ private fun AuthField(
     onValueChange: (String) -> Unit,
     label: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
     secure: Boolean = false
 ) {
+    var visible by remember { mutableStateOf(false) }
     OutlinedTextField(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        shape = RoundedCornerShape(18.dp),
         leadingIcon = { Icon(icon, contentDescription = null) },
-        visualTransformation = if (secure) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None
+        trailingIcon = {
+            if (secure) {
+                IconButton(onClick = { visible = !visible }) {
+                    Icon(
+                        if (visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                        contentDescription = null
+                    )
+                }
+            }
+        },
+        shape = RoundedCornerShape(10.dp),
+        visualTransformation = if (secure && !visible) {
+            PasswordVisualTransformation()
+        } else {
+            VisualTransformation.None
+        },
+        singleLine = true
     )
 }
-
