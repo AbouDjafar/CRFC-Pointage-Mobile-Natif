@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -75,7 +74,7 @@ import kotlinx.coroutines.launch
 
 private enum class ReportSheet { LATE_PICK, LATE_DETAILS, ABSENT_PICK, ABSENT_DETAILS }
 
-private data class DisplayEntry(
+internal data class DisplayEntry(
     val id: String,
     val title: String,
     val subtitle: String,
@@ -421,7 +420,7 @@ private fun MetricCard(label: String, value: String, modifier: Modifier = Modifi
 }
 
 @Composable
-private fun ReportEntriesCard(
+internal fun ReportEntriesCard(
     title: String,
     accent: Color,
     entries: List<DisplayEntry>,
