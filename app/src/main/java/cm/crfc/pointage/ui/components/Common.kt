@@ -174,9 +174,9 @@ fun CrfcCard(
             .animateContentSize()
             .offset(y = offsetY)
             .graphicsLayer {
-                alpha = alpha
-                scaleX = scale
-                scaleY = scale
+                this.alpha = alpha
+                this.scaleX = scale
+                this.scaleY = scale
             }
             .then(
                 if (onClick != null) {
