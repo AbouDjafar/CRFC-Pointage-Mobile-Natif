@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -47,7 +46,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import cm.crfc.pointage.R
 import cm.crfc.pointage.data.AuthRepository
-import cm.crfc.pointage.ui.components.EmployeeAvatar
+import cm.crfc.pointage.ui.components.CrfcBrandMark
 import cm.crfc.pointage.ui.components.FormField
 import cm.crfc.pointage.ui.components.PrimaryButton
 import cm.crfc.pointage.ui.components.SectionCard
@@ -279,7 +278,7 @@ private fun AuthScaffold(
         Image(
             painter = painterResource(id = R.drawable.bg_pattern),
             contentDescription = null,
-            modifier = Modifier.matchParentSize(),
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
             alpha = 0.12f
         )
@@ -316,8 +315,7 @@ private fun AuthScaffold(
                         horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceMD),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        EmployeeAvatar(
-                            name = "CR FC",
+                        CrfcBrandMark(
                             size = 56.dp,
                             modifier = Modifier.background(Color.White.copy(alpha = 0.14f), CircleShape)
                         )

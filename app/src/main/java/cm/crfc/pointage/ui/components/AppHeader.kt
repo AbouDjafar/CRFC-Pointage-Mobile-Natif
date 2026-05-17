@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.matchParentSize
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -55,7 +55,7 @@ fun AppHeader(
         Image(
             painter = painterResource(R.drawable.bg_pattern),
             contentDescription = null,
-            modifier = Modifier.matchParentSize(),
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
             alpha = 0.12f
         )

@@ -5,4 +5,8 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
     </style>
+
+    <style name="Theme.CRFCPointage.Splash" parent="Theme.CRFCPointage">
+        <item name="android:windowBackground">@color/splash_fallback</item>
+    </style>
 </resources>
