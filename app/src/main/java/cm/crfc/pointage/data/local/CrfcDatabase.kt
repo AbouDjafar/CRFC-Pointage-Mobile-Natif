@@ -13,9 +13,10 @@ import androidx.room.RoomDatabase
         RecurringAbsenceEntity::class,
         ReportEntity::class,
         LateEntryEntity::class,
-        AbsenceEntryEntity::class
+        AbsenceEntryEntity::class,
+        ExportFileEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class CrfcDatabase : RoomDatabase() {
@@ -26,10 +27,12 @@ abstract class CrfcDatabase : RoomDatabase() {
     abstract fun reportDao(): ReportDao
     abstract fun lateEntryDao(): LateEntryDao
     abstract fun absenceEntryDao(): AbsenceEntryDao
+    abstract fun exportFileDao(): ExportFileDao
 
     companion object {
         fun create(context: Context): CrfcDatabase =
-            Room.databaseBuilder(context, CrfcDatabase::class.java, "crfc_pointage.db").build()
+            Room.databaseBuilder(context, CrfcDatabase::class.java, "crfc_pointage.db")
+                .fallbackToDestructiveMigration()
+                .build()
     }
 }
-

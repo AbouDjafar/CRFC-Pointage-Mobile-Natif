@@ -129,6 +129,9 @@ class AuthRepository(
         if (password.length < 6) {
             return OperationResult(false, "Mot de passe trop court.")
         }
+        if (firstName.isBlank() || lastName.isBlank() || jobTitle.isBlank()) {
+            return OperationResult(false, "Tous les champs sont obligatoires.")
+        }
         if (userDao.getByEmail(normalizedEmail) != null) {
             return OperationResult(false, "Cet email est deja utilise.")
         }
@@ -160,4 +163,3 @@ class AuthRepository(
         userDao.deleteById(targetId)
     }
 }
-

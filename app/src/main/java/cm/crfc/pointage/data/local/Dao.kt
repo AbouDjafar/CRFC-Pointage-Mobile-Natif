@@ -45,6 +45,9 @@ interface EmployeeDao {
     @Query("SELECT COUNT(*) FROM employees")
     suspend fun count(): Int
 
+    @Query("SELECT * FROM employees WHERE id = :id LIMIT 1")
+    suspend fun getById(id: String): EmployeeEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: EmployeeEntity)
 
@@ -88,7 +91,7 @@ interface RecurringAbsenceDao {
 @Dao
 interface ReportDao {
     @Transaction
-    @Query("SELECT * FROM reports ORDER BY date DESC, createdAt DESC")
+    @Query("SELECT * FROM reports ORDER BY date DESC")
     fun observeBundles(): Flow<List<ReportBundleEntity>>
 
     @Transaction
@@ -96,7 +99,11 @@ interface ReportDao {
     fun observeBundleById(id: String): Flow<ReportBundleEntity?>
 
     @Transaction
-    @Query("SELECT * FROM reports ORDER BY date DESC, createdAt DESC")
+    @Query("SELECT * FROM reports WHERE date = :date LIMIT 1")
+    fun observeBundleByDate(date: String): Flow<ReportBundleEntity?>
+
+    @Transaction
+    @Query("SELECT * FROM reports ORDER BY date DESC")
     suspend fun getBundles(): List<ReportBundleEntity>
 
     @Query("SELECT * FROM reports WHERE id = :id LIMIT 1")
@@ -130,3 +137,14 @@ interface AbsenceEntryDao {
     suspend fun deleteById(id: String)
 }
 
+@Dao
+interface ExportFileDao {
+    @Query("SELECT * FROM export_files ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<ExportFileEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(item: ExportFileEntity)
+
+    @Query("DELETE FROM export_files WHERE id = :id")
+    fun deleteById(id: String)
+}

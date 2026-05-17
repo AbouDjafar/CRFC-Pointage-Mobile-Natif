@@ -4,6 +4,8 @@ enum class UserRole { ADMIN, AGENT }
 
 enum class ReportStatus { DRAFT, FINALIZED }
 
+enum class ExportFileType { PDF, EXCEL }
+
 data class User(
     val id: String,
     val firstName: String,
@@ -25,6 +27,8 @@ data class Employee(
     val fullName: String,
     val firstName: String,
     val lastName: String,
+    val jobTitle: String,
+    val department: String,
     val isActive: Boolean,
     val needsReview: Boolean,
     val importSource: String,
@@ -83,6 +87,18 @@ data class ExportPayload(
     val periodEnd: String
 )
 
+data class ExportFileRecord(
+    val id: String,
+    val type: ExportFileType,
+    val fileName: String,
+    val filePath: String,
+    val sizeBytes: Long,
+    val createdAt: String,
+    val reportDate: String? = null,
+    val periodStart: String? = null,
+    val periodEnd: String? = null
+)
+
 data class StatisticsSnapshot(
     val totalLate: Int,
     val totalAbsent: Int,
@@ -109,4 +125,3 @@ data class OperationResult(
     val success: Boolean,
     val error: String? = null
 )
-

@@ -27,7 +27,10 @@ class AppContainer(context: Context) {
         absenceEntryDao = database.absenceEntryDao()
     )
 
-    val exportService = ExportService(appContext)
+    val exportService = ExportService(
+        context = appContext,
+        exportFileDao = database.exportFileDao()
+    )
 
     init {
         SeedInstaller(
@@ -37,4 +40,3 @@ class AppContainer(context: Context) {
         ).installIfNeeded()
     }
 }
-

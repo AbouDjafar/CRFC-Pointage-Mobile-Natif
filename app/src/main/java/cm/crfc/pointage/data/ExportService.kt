@@ -8,9 +8,12 @@ import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import androidx.core.content.FileProvider
 import cm.crfc.pointage.R
+import cm.crfc.pointage.data.local.ExportFileDao
 import cm.crfc.pointage.model.AbsenceReason
 import cm.crfc.pointage.model.DailyReport
 import cm.crfc.pointage.model.Employee
+import cm.crfc.pointage.model.ExportFileRecord
+import cm.crfc.pointage.model.ExportFileType
 import cm.crfc.pointage.model.ExportPayload
 import cm.crfc.pointage.model.OperationResult
 import cm.crfc.pointage.model.User
@@ -18,11 +21,23 @@ import cm.crfc.pointage.util.buildCityLine
 import cm.crfc.pointage.util.exportFileName
 import cm.crfc.pointage.util.formatDisplayDate
 import cm.crfc.pointage.util.formatSlashDate
+import cm.crfc.pointage.util.genId
+import cm.crfc.pointage.util.nowIso
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileOutputStream
 
-class ExportService(private val context: Context) {
+class ExportService(
+    private val context: Context,
+    private val exportFileDao: ExportFileDao
+) {
+    fun observeExportFiles(): Flow<List<ExportFileRecord>> =
+        exportFileDao.observeAll().map { items -> items.map { it.toDomain() } }
+
     fun exportPdf(
         report: DailyReport,
         employees: List<Employee>,
@@ -30,8 +45,18 @@ class ExportService(private val context: Context) {
         author: User
     ): OperationResult {
         return runCatching {
-            val file = File(context.cacheDir, exportFileName("rapport-pointage", "pdf"))
+            val file = File(pdfDir(), exportFileName("rapport-pointage-${report.date}", "pdf"))
             buildPdf(file, report, employees, absenceReasons, author)
+            val record = ExportFileRecord(
+                id = genId(),
+                type = ExportFileType.PDF,
+                fileName = file.name,
+                filePath = file.absolutePath,
+                sizeBytes = file.length(),
+                createdAt = nowIso(),
+                reportDate = report.date
+            )
+            runBlocking(Dispatchers.IO) { exportFileDao.insert(record.toEntity()) }
             shareFile(file, "application/pdf", "Partager le rapport PDF")
             OperationResult(true)
         }.getOrElse { OperationResult(false, it.message ?: "Erreur lors de l'export PDF.") }
@@ -39,8 +64,19 @@ class ExportService(private val context: Context) {
 
     fun exportExcel(payload: ExportPayload): OperationResult {
         return runCatching {
-            val file = File(context.cacheDir, exportFileName("synthese-rapports", "xlsx"))
+            val file = File(excelDir(), exportFileName("synthese-rapports", "xlsx"))
             buildExcel(file, payload)
+            val record = ExportFileRecord(
+                id = genId(),
+                type = ExportFileType.EXCEL,
+                fileName = file.name,
+                filePath = file.absolutePath,
+                sizeBytes = file.length(),
+                createdAt = nowIso(),
+                periodStart = payload.periodStart,
+                periodEnd = payload.periodEnd
+            )
+            runBlocking(Dispatchers.IO) { exportFileDao.insert(record.toEntity()) }
             shareFile(
                 file,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -49,6 +85,34 @@ class ExportService(private val context: Context) {
             OperationResult(true)
         }.getOrElse { OperationResult(false, it.message ?: "Erreur lors de l'export Excel.") }
     }
+
+    suspend fun deleteExport(record: ExportFileRecord): OperationResult {
+        return runCatching {
+            File(record.filePath).takeIf { it.exists() }?.delete()
+            runBlocking(Dispatchers.IO) { exportFileDao.deleteById(record.id) }
+            OperationResult(true)
+        }.getOrElse { OperationResult(false, it.message ?: "Suppression impossible.") }
+    }
+
+    fun shareExport(record: ExportFileRecord): OperationResult =
+        runCatching {
+            val file = File(record.filePath)
+            if (!file.exists()) {
+                return OperationResult(false, "Le fichier n'existe plus sur l'appareil.")
+            }
+            shareFile(file, mimeType(record.type), "Partager ${record.fileName}")
+            OperationResult(true)
+        }.getOrElse { OperationResult(false, it.message ?: "Partage impossible.") }
+
+    private fun mimeType(type: ExportFileType): String =
+        when (type) {
+            ExportFileType.PDF -> "application/pdf"
+            ExportFileType.EXCEL -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        }
+
+    private fun pdfDir(): File = File(context.filesDir, "exports/pdf").apply { mkdirs() }
+
+    private fun excelDir(): File = File(context.filesDir, "exports/excel").apply { mkdirs() }
 
     private fun shareFile(file: File, mimeType: String, title: String) {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
@@ -235,4 +299,3 @@ class ExportService(private val context: Context) {
         workbook.close()
     }
 }
-

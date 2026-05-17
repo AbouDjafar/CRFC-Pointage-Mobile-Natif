@@ -27,6 +27,8 @@ data class EmployeeEntity(
     val fullName: String,
     val firstName: String,
     val lastName: String,
+    val jobTitle: String,
+    val department: String,
     val isActive: Boolean,
     val needsReview: Boolean,
     val importSource: String,
@@ -112,6 +114,19 @@ data class AbsenceEntryEntity(
     val comment: String? = null
 )
 
+@Entity(tableName = "export_files")
+data class ExportFileEntity(
+    @PrimaryKey val id: String,
+    val type: String,
+    val fileName: String,
+    val filePath: String,
+    val sizeBytes: Long,
+    val createdAt: String,
+    val reportDate: String? = null,
+    val periodStart: String? = null,
+    val periodEnd: String? = null
+)
+
 data class ReportBundleEntity(
     @Embedded val report: ReportEntity,
     @Relation(parentColumn = "id", entityColumn = "reportId")
@@ -119,4 +134,3 @@ data class ReportBundleEntity(
     @Relation(parentColumn = "id", entityColumn = "reportId")
     val absenceEntries: List<AbsenceEntryEntity>
 )
-

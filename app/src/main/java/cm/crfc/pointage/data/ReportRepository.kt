@@ -4,7 +4,6 @@ import cm.crfc.pointage.data.local.AbsenceEntryDao
 import cm.crfc.pointage.data.local.AbsenceEntryEntity
 import cm.crfc.pointage.data.local.AbsenceReasonDao
 import cm.crfc.pointage.data.local.EmployeeDao
-import cm.crfc.pointage.data.local.EmployeeEntity
 import cm.crfc.pointage.data.local.LateEntryDao
 import cm.crfc.pointage.data.local.LateEntryEntity
 import cm.crfc.pointage.data.local.RecurringAbsenceDao
@@ -19,7 +18,6 @@ import cm.crfc.pointage.model.RecurringAbsence
 import cm.crfc.pointage.model.ReportStatus
 import cm.crfc.pointage.model.StatisticsSnapshot
 import cm.crfc.pointage.model.User
-import cm.crfc.pointage.model.UserRole
 import cm.crfc.pointage.util.calcMinutesLate
 import cm.crfc.pointage.util.genId
 import cm.crfc.pointage.util.generateIntroText
@@ -37,7 +35,7 @@ class ReportRepository(
     private val absenceEntryDao: AbsenceEntryDao
 ) {
     fun observeEmployees(): Flow<List<Employee>> =
-        employeeDao.observeAll().map { items -> items.map(EmployeeEntity::toDomain) }
+        employeeDao.observeAll().map { items -> items.map { it.toDomain() } }
 
     fun observeAbsenceReasons(): Flow<List<AbsenceReason>> =
         absenceReasonDao.observeAll().map { items -> items.map { it.toDomain() } }
@@ -46,79 +44,62 @@ class ReportRepository(
         recurringAbsenceDao.observeAll().map { items -> items.map { it.toDomain() } }
 
     fun observeReportsFor(user: User): Flow<List<DailyReport>> =
-        reportDao.observeBundles().map { bundles ->
-            val reports = bundles.map { it.toDomain() }
-            if (user.role == UserRole.ADMIN) reports else reports.filter { it.createdBy == user.id }
-        }
+        reportDao.observeBundles().map { bundles -> bundles.map { it.toDomain() }.sortedByDescending { it.date } }
 
     fun observeReportById(id: String): Flow<DailyReport?> =
         reportDao.observeBundleById(id).map { it?.toDomain() }
+
+    fun observeReportByDate(date: String): Flow<DailyReport?> =
+        reportDao.observeBundleByDate(date).map { it?.toDomain() }
 
     suspend fun getEmployees(): List<Employee> = employeeDao.getAll().map { it.toDomain() }
 
     suspend fun getAbsenceReasons(): List<AbsenceReason> = absenceReasonDao.getAll().map { it.toDomain() }
 
-    suspend fun getReportsFor(user: User): List<DailyReport> {
-        val reports = reportDao.getBundles().map { it.toDomain() }
-        return if (user.role == UserRole.ADMIN) reports else reports.filter { it.createdBy == user.id }
-    }
+    suspend fun getReportsFor(user: User): List<DailyReport> =
+        reportDao.getBundles().map { it.toDomain() }.sortedByDescending { it.date }
 
-    suspend fun getReportByDate(user: User, date: String): DailyReport? {
-        val candidates = reportDao.getByDate(date)
-        val reportEntity = if (user.role == UserRole.ADMIN) {
-            candidates.firstOrNull()
-        } else {
-            candidates.firstOrNull { it.createdBy == user.id }
-        } ?: return null
-        return reportDao.getBundles().firstOrNull { it.report.id == reportEntity.id }?.toDomain()
-    }
+    suspend fun getReportByDate(date: String): DailyReport? =
+        reportDao.getByDate(date).firstOrNull()?.let { reportDao.getBundles().firstOrNull { bundle -> bundle.report.id == it.id }?.toDomain() }
 
-    suspend fun addEmployee(firstName: String, lastName: String) {
+    suspend fun addEmployee(
+        firstName: String,
+        lastName: String,
+        jobTitle: String = "",
+        department: String = ""
+    ) {
         val fn = firstName.trim()
         val ln = lastName.trim()
+        val fullName = listOf(fn, ln).filter { it.isNotBlank() }.joinToString(" ").trim()
         employeeDao.insert(
-            EmployeeEntity(
+            Employee(
                 id = genId(),
-                fullName = listOf(ln, fn).filter { it.isNotBlank() }.joinToString(" ").trim(),
+                fullName = fullName,
                 firstName = fn,
                 lastName = ln,
+                jobTitle = jobTitle.trim().ifBlank { "Agent" },
+                department = department.trim().ifBlank { "Service General" },
                 isActive = true,
                 needsReview = false,
                 importSource = "manual",
                 importedAt = nowIso().substringBefore("T"),
                 createdAt = nowIso()
-            )
+            ).toEntity()
         )
     }
 
     suspend fun updateEmployee(employee: Employee) {
-        employeeDao.insert(
-            EmployeeEntity(
-                id = employee.id,
-                fullName = employee.fullName,
-                firstName = employee.firstName,
-                lastName = employee.lastName,
-                isActive = employee.isActive,
-                needsReview = employee.needsReview,
-                importSource = employee.importSource,
-                importedAt = employee.importedAt,
-                createdAt = employee.createdAt
-            )
-        )
+        employeeDao.insert(employee.toEntity())
     }
 
     suspend fun toggleEmployeeActive(id: String) {
-        val employee = employeeDao.getAll().firstOrNull { it.id == id } ?: return
-        employeeDao.insert(employee.copy(isActive = !employee.isActive))
+        val employee = employeeDao.getById(id)?.toDomain() ?: return
+        employeeDao.insert(employee.copy(isActive = !employee.isActive).toEntity())
     }
 
     suspend fun createOrUpdateTodayReport(user: User, date: String): DailyReport {
-        val existing = getReportByDate(user, date)
-        if (existing != null) {
-            val updated = existing.copy(updatedAt = nowIso())
-            reportDao.insert(updated.toEntity())
-            return updated
-        }
+        val existing = getReportByDate(date)
+        if (existing != null) return existing
 
         val reportId = genId()
         val recurring = recurringAbsenceDao.getAll()
@@ -278,4 +259,3 @@ class ReportRepository(
         )
     }
 }
-

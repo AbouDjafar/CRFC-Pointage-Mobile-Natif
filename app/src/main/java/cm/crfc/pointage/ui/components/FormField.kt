@@ -30,6 +30,7 @@ fun FormField(
     leadingIcon: ImageVector? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     singleLine: Boolean = true,
+    enabled: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -49,6 +50,7 @@ fun FormField(
             leadingIcon = leadingIcon?.let { icon -> { Icon(icon, contentDescription = null) } },
             trailingIcon = trailingIcon,
             singleLine = singleLine,
+            enabled = enabled,
             shape = RoundedCornerShape(12.dp),
             visualTransformation = visualTransformation,
             colors = OutlinedTextFieldDefaults.colors(

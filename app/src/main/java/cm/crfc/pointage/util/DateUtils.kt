@@ -25,6 +25,8 @@ fun todayIso(): String = LocalDate.now(zone).format(storageFormatter)
 
 fun subtractDays(days: Long): String = LocalDate.now(zone).minusDays(days).format(storageFormatter)
 
+fun addDays(date: String, days: Long): String = LocalDate.parse(date).plusDays(days).format(storageFormatter)
+
 fun genId(): String = UUID.randomUUID().toString()
 
 fun formatDisplayDate(date: String): String =
@@ -53,4 +55,3 @@ fun buildCityLine(date: String): String {
 
 fun exportFileName(prefix: String, extension: String): String =
     "$prefix-${LocalDateTime.now(zone).format(fileFormatter)}.$extension"
-

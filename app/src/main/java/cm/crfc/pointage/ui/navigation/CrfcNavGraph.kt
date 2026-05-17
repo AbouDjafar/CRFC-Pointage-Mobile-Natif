@@ -1,12 +1,12 @@
 package cm.crfc.pointage.ui.navigation
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -14,14 +14,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import cm.crfc.pointage.AppContainer
+import cm.crfc.pointage.model.UserRole
 import cm.crfc.pointage.ui.auth.LoginScreen
-import cm.crfc.pointage.ui.auth.RegisterScreen
 import cm.crfc.pointage.ui.employes.EmployeesScreen
+import cm.crfc.pointage.ui.exports.ExportsScreen
 import cm.crfc.pointage.ui.historique.HistoryScreen
-import cm.crfc.pointage.ui.rapport.ReportDetailScreen
-import cm.crfc.pointage.ui.rapport.ReportScreen
+import cm.crfc.pointage.ui.home.HomeScreen
+import cm.crfc.pointage.ui.rapport.DailyReportScreen
+import cm.crfc.pointage.ui.recurring.RecurringAbsencesScreen
+import cm.crfc.pointage.ui.reglages.PreferencesScreen
 import cm.crfc.pointage.ui.reglages.SettingsScreen
 import cm.crfc.pointage.ui.stats.StatsScreen
+import cm.crfc.pointage.ui.users.UserManagementScreen
+import cm.crfc.pointage.util.todayIso
 
 @Composable
 fun CrfcNavGraph(container: AppContainer) {
@@ -31,19 +36,18 @@ fun CrfcNavGraph(container: AppContainer) {
     val currentRoute = backStackEntry?.destination?.route
 
     LaunchedEffect(currentUser?.id, currentRoute) {
-        if (currentUser == null && currentRoute != Routes.LOGIN && currentRoute != Routes.REGISTER) {
+        if (currentUser == null && currentRoute != Routes.LOGIN) {
             navController.navigate(Routes.LOGIN) {
                 popUpTo(navController.graph.id)
             }
-        } else if (currentUser != null && (currentRoute == Routes.LOGIN || currentRoute == Routes.REGISTER || currentRoute == null)) {
-            navController.navigate(Routes.TAB_REPORT) {
+        } else if (currentUser != null && (currentRoute == Routes.LOGIN || currentRoute == null)) {
+            navController.navigate(Routes.TAB_HOME) {
                 popUpTo(navController.graph.id)
             }
         }
     }
 
     Scaffold(
-        modifier = Modifier,
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (currentRoute?.startsWith("tabs/") == true && currentUser != null) {
@@ -62,86 +66,140 @@ fun CrfcNavGraph(container: AppContainer) {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = if (currentUser == null) Routes.LOGIN else Routes.TAB_REPORT,
-            modifier = Modifier.padding(bottom = paddingValues.calculateBottomPadding()),
+            startDestination = if (currentUser == null) Routes.LOGIN else Routes.TAB_HOME,
+            modifier = Modifier.padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             composable(Routes.LOGIN) {
                 LoginScreen(
                     authRepository = container.authRepository,
                     onSuccess = {
-                        navController.navigate(Routes.TAB_REPORT) {
+                        navController.navigate(Routes.TAB_HOME) {
                             popUpTo(Routes.LOGIN) { inclusive = true }
                         }
                     },
-                    onRegister = { navController.navigate(Routes.REGISTER) }
+                    onRegister = {}
                 )
             }
-            composable(Routes.REGISTER) {
-                RegisterScreen(
-                    authRepository = container.authRepository,
-                    onBack = { navController.popBackStack() },
-                    onRegistered = { navController.popBackStack() }
-                )
-            }
-            composable(Routes.TAB_REPORT) {
+            composable(Routes.TAB_HOME) {
                 currentUser?.let { user ->
-                    ReportScreen(
+                    HomeScreen(
                         user = user,
                         reportRepository = container.reportRepository,
-                        exportService = container.exportService,
-                        onOpenReport = { id -> navController.navigate(Routes.reportDetail(id)) }
+                        onOpenDailyReport = { date -> navController.navigate(Routes.dailyReport(date)) },
+                        onOpenHistory = { navController.navigate(Routes.REPORT_HISTORY) },
+                        onOpenExports = { navController.navigate(Routes.EXPORTS) },
+                        onOpenAnalytics = { navController.navigate(Routes.ANALYTICS) }
                     )
                 }
             }
-            composable(Routes.TAB_HISTORY) {
+            composable(Routes.TAB_PERSONNEL) {
                 currentUser?.let { user ->
-                    HistoryScreen(
-                        user = user,
-                        reportRepository = container.reportRepository,
-                        exportService = container.exportService,
-                        onOpenReport = { id -> navController.navigate(Routes.reportDetail(id)) }
-                    )
-                }
-            }
-            composable(Routes.TAB_STATS) {
-                currentUser?.let { user ->
-                    StatsScreen(
-                        user = user,
-                        reportRepository = container.reportRepository
-                    )
-                }
-            }
-            composable(Routes.TAB_EMPLOYEES) {
-                currentUser?.let { user ->
-                    EmployeesScreen(
-                        user = user,
-                        reportRepository = container.reportRepository
-                    )
+                    if (user.role == UserRole.ADMIN) {
+                        EmployeesScreen(
+                            user = user,
+                            reportRepository = container.reportRepository,
+                            onOpenUserManagement = { navController.navigate(Routes.USER_MANAGEMENT) },
+                            onOpenRecurringAbsences = { navController.navigate(Routes.RECURRING_ABSENCES) }
+                        )
+                    } else {
+                        SettingsScreen(
+                            user = user,
+                            authRepository = container.authRepository,
+                            onLoggedOut = {
+                                navController.navigate(Routes.LOGIN) {
+                                    popUpTo(navController.graph.id)
+                                }
+                            }
+                        )
+                    }
                 }
             }
             composable(Routes.TAB_SETTINGS) {
                 currentUser?.let { user ->
-                    SettingsScreen(
+                    if (user.role == UserRole.ADMIN) {
+                        SettingsScreen(
+                            user = user,
+                            authRepository = container.authRepository,
+                            onLoggedOut = {
+                                navController.navigate(Routes.LOGIN) {
+                                    popUpTo(navController.graph.id)
+                                }
+                            },
+                            onOpenUserManagement = { navController.navigate(Routes.USER_MANAGEMENT) },
+                            onOpenRecurringAbsences = { navController.navigate(Routes.RECURRING_ABSENCES) }
+                        )
+                    } else {
+                        PreferencesScreen(
+                            user = user,
+                            authRepository = container.authRepository,
+                            onLoggedOut = {
+                                navController.navigate(Routes.LOGIN) {
+                                    popUpTo(navController.graph.id)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+            composable(Routes.DAILY_REPORT) { state ->
+                currentUser?.let { user ->
+                    DailyReportScreen(
                         user = user,
-                        authRepository = container.authRepository,
-                        onLoggedOut = {
-                            navController.navigate(Routes.LOGIN) {
-                                popUpTo(navController.graph.id)
+                        selectedDate = state.arguments?.getString("date") ?: todayIso(),
+                        reportRepository = container.reportRepository,
+                        onBack = { navController.popBackStack() },
+                        onNavigateDate = { date ->
+                            navController.navigate(Routes.dailyReport(date)) {
+                                launchSingleTop = true
                             }
                         }
                     )
                 }
             }
-            composable(Routes.REPORT_DETAIL) { backStackEntryState ->
+            composable(Routes.REPORT_HISTORY) {
                 currentUser?.let { user ->
-                    ReportDetailScreen(
+                    HistoryScreen(
                         user = user,
-                        reportId = backStackEntryState.arguments?.getString("id").orEmpty(),
                         reportRepository = container.reportRepository,
-                        authRepository = container.authRepository,
                         exportService = container.exportService,
-                        onBack = { navController.popBackStack() },
-                        contentPadding = paddingValues
+                        onOpenReport = { date -> navController.navigate(Routes.dailyReport(date)) }
+                    )
+                }
+            }
+            composable(Routes.ANALYTICS) {
+                currentUser?.let { user ->
+                    StatsScreen(
+                        user = user,
+                        reportRepository = container.reportRepository,
+                        exportService = container.exportService
+                    )
+                }
+            }
+            composable(Routes.EXPORTS) {
+                currentUser?.let { user ->
+                    ExportsScreen(
+                        user = user,
+                        reportRepository = container.reportRepository,
+                        exportService = container.exportService,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+            }
+            composable(Routes.RECURRING_ABSENCES) {
+                currentUser?.let { user ->
+                    RecurringAbsencesScreen(
+                        user = user,
+                        reportRepository = container.reportRepository,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+            }
+            composable(Routes.USER_MANAGEMENT) {
+                currentUser?.let { user ->
+                    UserManagementScreen(
+                        currentUser = user,
+                        authRepository = container.authRepository,
+                        onBack = { navController.popBackStack() }
                     )
                 }
             }

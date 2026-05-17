@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,14 +16,13 @@ import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.WarningAmber
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,23 +32,18 @@ import cm.crfc.pointage.data.ReportRepository
 import cm.crfc.pointage.model.ExportPayload
 import cm.crfc.pointage.model.ReportStatus
 import cm.crfc.pointage.model.User
-import cm.crfc.pointage.model.UserRole
-import cm.crfc.pointage.ui.components.AppHeader
-import cm.crfc.pointage.ui.components.ButtonVariant
-import cm.crfc.pointage.ui.components.ConfirmDialog
 import cm.crfc.pointage.ui.components.EmptyState
 import cm.crfc.pointage.ui.components.FilterChipRow
 import cm.crfc.pointage.ui.components.HeaderActionPill
-import cm.crfc.pointage.ui.components.PrimaryButton
 import cm.crfc.pointage.ui.components.SectionCard
 import cm.crfc.pointage.ui.components.StatChip
 import cm.crfc.pointage.ui.theme.Dimens
 import cm.crfc.pointage.ui.theme.LocalCrfcUiExtras
+import cm.crfc.pointage.ui.theme.TextSecondary
 import cm.crfc.pointage.ui.theme.horizontalPadding
 import cm.crfc.pointage.util.formatDisplayDate
 import cm.crfc.pointage.util.subtractDays
 import cm.crfc.pointage.util.todayIso
-import kotlinx.coroutines.launch
 
 @Composable
 fun HistoryScreen(
@@ -60,17 +53,14 @@ fun HistoryScreen(
     onOpenReport: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val extras = LocalCrfcUiExtras.current
     val horizontalPadding = horizontalPadding()
-
     val reports by reportRepository.observeReportsFor(user).collectAsStateWithLifecycle(initialValue = emptyList())
     val employees by reportRepository.observeEmployees().collectAsStateWithLifecycle(initialValue = emptyList())
     val reasons by reportRepository.observeAbsenceReasons().collectAsStateWithLifecycle(initialValue = emptyList())
 
-    var period by remember { mutableStateOf("Tout") }
+    var period by remember { mutableStateOf("30 jours") }
     var status by remember { mutableStateOf("Tous") }
-    var reportToDelete by remember { mutableStateOf<String?>(null) }
 
     val threshold = when (period) {
         "7 jours" -> subtractDays(7)
@@ -78,13 +68,12 @@ fun HistoryScreen(
         "90 jours" -> subtractDays(90)
         else -> null
     }
-
-    val filteredReports = reports
+    val filtered = reports
         .filter { threshold == null || it.date >= threshold }
         .filter {
             when (status) {
-                "Brouillons" -> it.status == ReportStatus.DRAFT
-                "Finalises" -> it.status == ReportStatus.FINALIZED
+                "Brouillon" -> it.status == ReportStatus.DRAFT
+                "Finalise" -> it.status == ReportStatus.FINALIZED
                 else -> true
             }
         }
@@ -95,128 +84,109 @@ fun HistoryScreen(
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceLG)
     ) {
         item {
-            AppHeader(
-                title = "Historique",
-                subtitle = "${filteredReports.size} rapport(s) affiches",
-                actions = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalPadding, vertical = Dimens.SpaceXL),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceLG)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("HISTORIQUE DES RAPPORTS", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                        Text("Report History", style = MaterialTheme.typography.headlineMedium)
+                    }
                     HeaderActionPill(
                         text = "Excel",
                         onClick = {
-                            if (filteredReports.isEmpty()) {
+                            if (filtered.isEmpty()) {
                                 Toast.makeText(context, "Aucune donnee a exporter.", Toast.LENGTH_LONG).show()
                             } else {
-                                val result = exportService.exportExcel(
+                                exportService.exportExcel(
                                     ExportPayload(
-                                        reports = filteredReports,
+                                        reports = filtered,
                                         employees = employees,
                                         absenceReasons = reasons,
                                         author = user,
-                                        periodStart = threshold ?: filteredReports.minOfOrNull { it.date } ?: todayIso(),
-                                        periodEnd = todayIso()
+                                        periodStart = threshold ?: filtered.minOf { it.date },
+                                        periodEnd = filtered.maxOf { it.date }
                                     )
                                 )
-                                if (!result.success) Toast.makeText(context, result.error, Toast.LENGTH_LONG).show()
                             }
                         }
                     )
                 }
-            )
-        }
-        item {
-            SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                Text("Periode", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(Dimens.SpaceSM))
-                FilterChipRow(
-                    options = listOf("Tout", "7 jours", "30 jours", "90 jours"),
-                    selectedOption = period,
-                    onOptionSelected = { period = it },
-                    activeColor = extras.orangeAccent
-                )
-                Spacer(modifier = Modifier.height(Dimens.SpaceLG))
-                Text("Statut", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(Dimens.SpaceSM))
-                FilterChipRow(
-                    options = listOf("Tous", "Finalises", "Brouillons"),
-                    selectedOption = status,
-                    onOptionSelected = { status = it },
-                    activeColor = extras.purpleAccent
-                )
+
+                SectionCard {
+                    Text("Periode", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.padding(top = Dimens.SpaceSM))
+                    FilterChipRow(
+                        options = listOf("7 jours", "30 jours", "90 jours", "Tout"),
+                        selectedOption = period,
+                        onOptionSelected = { period = it },
+                        activeColor = extras.orangeAccent
+                    )
+                    Spacer(modifier = Modifier.padding(top = Dimens.SpaceLG))
+                    Text("Statut", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.padding(top = Dimens.SpaceSM))
+                    FilterChipRow(
+                        options = listOf("Tous", "Finalise", "Brouillon"),
+                        selectedOption = status,
+                        onOptionSelected = { status = it },
+                        activeColor = extras.greenAccent
+                    )
+                }
             }
         }
 
-        if (filteredReports.isEmpty()) {
+        if (filtered.isEmpty()) {
             item {
                 SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding)) {
                     EmptyState(
                         icon = Icons.Outlined.Download,
                         title = "Aucun rapport",
-                        subtitle = "Aucun rapport ne correspond aux filtres actuellement selectionnes."
+                        subtitle = "Aucun rapport ne correspond aux filtres selectionnes."
                     )
                 }
             }
         } else {
-            items(filteredReports, key = { it.id }) { report ->
-                SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding), highlighted = true) {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceSM)) {
+            items(filtered, key = { it.id }) { report ->
+                SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceSM)
+                        ) {
                             Text(formatDisplayDate(report.date), style = MaterialTheme.typography.titleLarge)
                             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceSM)) {
-                                StatChip(
-                                    icon = Icons.Outlined.Schedule,
-                                    text = "${report.lateEntries.size} retards",
-                                    containerColor = extras.orangeLight,
-                                    contentColor = extras.orangeAccent
-                                )
-                                StatChip(
-                                    icon = Icons.Outlined.WarningAmber,
-                                    text = "${report.absenceEntries.size} absences",
-                                    containerColor = extras.purpleLight,
-                                    contentColor = extras.purpleAccent
-                                )
-                                StatChip(
-                                    icon = Icons.Outlined.Group,
-                                    text = "${report.visitorCount} visiteurs",
-                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                                    contentColor = MaterialTheme.colorScheme.primary
-                                )
+                                StatChip(Icons.Outlined.Schedule, "${report.lateEntries.size}", extras.orangeLight, extras.orangeAccent)
+                                StatChip(Icons.Outlined.WarningAmber, "${report.absenceEntries.size}", extras.greenLight, extras.greenAccent)
+                                StatChip(Icons.Outlined.Group, "${report.visitorCount}", MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), MaterialTheme.colorScheme.primary)
                             }
                             Text(
-                                text = if (report.status == ReportStatus.FINALIZED) "Rapport finalise" else "Rapport en brouillon",
-                                style = MaterialTheme.typography.bodyMedium
+                                text = if (report.status == ReportStatus.FINALIZED) "Rapport finalise" else "Rapport brouillon",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary
                             )
                         }
-                    }
-                    Spacer(modifier = Modifier.height(Dimens.SpaceLG))
-                    PrimaryButton(
-                        label = "Ouvrir le rapport",
-                        onClick = { onOpenReport(report.id) },
-                        variant = ButtonVariant.NAVY
-                    )
-                    if (user.role == UserRole.ADMIN) {
-                        Spacer(modifier = Modifier.height(Dimens.SpaceSM))
-                        PrimaryButton(
-                            label = "Supprimer",
-                            onClick = { reportToDelete = report.id },
-                            variant = ButtonVariant.GHOST
-                        )
+                        Surface(onClick = { onOpenReport(report.date) }, color = extras.orangeAccent, shape = MaterialTheme.shapes.small) {
+                            Text(
+                                text = "Ouvrir",
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
                 }
             }
         }
 
         item { Spacer(modifier = Modifier.navigationBarsPadding()) }
-    }
-
-    reportToDelete?.let { targetId ->
-        ConfirmDialog(
-            title = "Supprimer ce rapport ?",
-            message = "Cette suppression est definitive.",
-            confirmLabel = "Supprimer",
-            onConfirm = {
-                reportToDelete = null
-                scope.launch { reportRepository.deleteReport(targetId) }
-            },
-            onDismiss = { reportToDelete = null }
-        )
     }
 }

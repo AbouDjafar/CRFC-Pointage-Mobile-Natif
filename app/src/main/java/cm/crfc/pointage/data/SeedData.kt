@@ -102,15 +102,39 @@ private val employeeDefs = listOf(
     "emp-041|Hypolite Myriam|FONKEU|false"
 )
 
+private val seedJobTitles = listOf(
+    "Agent d'accueil",
+    "Responsable d'exploitation",
+    "Directeur adjoint",
+    "Controleur",
+    "Comptable",
+    "Ressources humaines",
+    "Technicien maintenance",
+    "Assistant logistique"
+)
+
+private val seedDepartments = listOf(
+    "Service Administratif",
+    "Logistique",
+    "Ressources Humaines",
+    "Maintenance",
+    "Comptabilite",
+    "Service Technique"
+)
+
 private val seedEmployees = employeeDefs.map { raw ->
     val parts = raw.split("|")
     val firstName = parts[1]
     val lastName = parts[2]
+    val index = employeeDefs.indexOf(raw)
+    val fullName = listOf(firstName, lastName).filter { it.isNotBlank() }.joinToString(" ").trim()
     EmployeeEntity(
         id = parts[0],
-        fullName = listOf(lastName, firstName).filter { it.isNotBlank() }.joinToString(" ").trim(),
+        fullName = fullName,
         firstName = firstName,
         lastName = lastName,
+        jobTitle = seedJobTitles[index % seedJobTitles.size],
+        department = seedDepartments[index % seedDepartments.size],
         isActive = true,
         needsReview = parts[3].toBoolean(),
         importSource = "CSV",
@@ -118,4 +142,3 @@ private val seedEmployees = employeeDefs.map { raw ->
         createdAt = now
     )
 }
-

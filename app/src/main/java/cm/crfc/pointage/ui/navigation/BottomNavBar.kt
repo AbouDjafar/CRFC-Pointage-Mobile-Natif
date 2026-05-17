@@ -12,10 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BarChart
-import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Group
-import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,10 +36,8 @@ data class BottomDestination(
 )
 
 val BottomDestinations = listOf(
-    BottomDestination(Routes.TAB_REPORT, "Rapport", Icons.Outlined.Description),
-    BottomDestination(Routes.TAB_HISTORY, "Historique", Icons.Outlined.History),
-    BottomDestination(Routes.TAB_STATS, "Stats", Icons.Outlined.BarChart),
-    BottomDestination(Routes.TAB_EMPLOYEES, "Employes", Icons.Outlined.Group),
+    BottomDestination(Routes.TAB_HOME, "Accueil", Icons.Outlined.Home),
+    BottomDestination(Routes.TAB_PERSONNEL, "Personnel", Icons.Outlined.Group),
     BottomDestination(Routes.TAB_SETTINGS, "Reglages", Icons.Outlined.Settings)
 )
 
@@ -61,7 +57,7 @@ fun CrfcBottomBar(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .height(Dimens.BottomNavHeight)
-                .padding(horizontal = 8.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {

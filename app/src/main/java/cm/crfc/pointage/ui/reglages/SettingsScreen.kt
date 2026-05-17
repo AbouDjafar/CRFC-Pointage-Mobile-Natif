@@ -6,15 +6,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,33 +24,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cm.crfc.pointage.data.AuthRepository
 import cm.crfc.pointage.model.User
 import cm.crfc.pointage.model.UserRole
-import cm.crfc.pointage.ui.components.AppHeader
-import cm.crfc.pointage.ui.components.BottomSheetHeader
-import cm.crfc.pointage.ui.components.ButtonVariant
 import cm.crfc.pointage.ui.components.EmployeeAvatar
 import cm.crfc.pointage.ui.components.FormField
-import cm.crfc.pointage.ui.components.PrimaryButton
 import cm.crfc.pointage.ui.components.SectionCard
-import cm.crfc.pointage.ui.components.StatChip
 import cm.crfc.pointage.ui.theme.Dimens
 import cm.crfc.pointage.ui.theme.LocalCrfcUiExtras
 import cm.crfc.pointage.ui.theme.TextSecondary
 import cm.crfc.pointage.ui.theme.horizontalPadding
 import kotlinx.coroutines.launch
 
-private enum class SettingsSheet { PROFILE, PASSWORD, CREATE_USER }
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     user: User,
     authRepository: AuthRepository,
-    onLoggedOut: () -> Unit
+    onLoggedOut: () -> Unit,
+    onOpenUserManagement: (() -> Unit)? = null,
+    onOpenRecurringAbsences: (() -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     val extras = LocalCrfcUiExtras.current
@@ -56,18 +54,12 @@ fun SettingsScreen(
     val users by authRepository.observeUsers().collectAsStateWithLifecycle(initialValue = emptyList())
     val currentUser = users.firstOrNull { it.id == user.id } ?: user
 
-    var activeSheet by remember { mutableStateOf<SettingsSheet?>(null) }
     var firstName by remember(currentUser.id) { mutableStateOf(currentUser.firstName) }
     var lastName by remember(currentUser.id) { mutableStateOf(currentUser.lastName) }
     var jobTitle by remember(currentUser.id) { mutableStateOf(currentUser.jobTitle) }
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
-    var createFirstName by remember { mutableStateOf("") }
-    var createLastName by remember { mutableStateOf("") }
-    var createEmail by remember { mutableStateOf("") }
-    var createJobTitle by remember { mutableStateOf("") }
-    var createPassword by remember { mutableStateOf("") }
-    var createRole by remember { mutableStateOf(UserRole.AGENT) }
+    var darkMode by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
@@ -75,25 +67,72 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceLG)
     ) {
         item {
-            AppHeader(
-                title = "Reglages",
-                subtitle = "Compte, utilisateurs et session"
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalPadding, vertical = Dimens.SpaceXL),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceLG)
+            ) {
+                Text("MON PROFIL", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                EmployeeAvatar(currentUser.fullName, size = 72.dp)
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(currentUser.fullName, style = MaterialTheme.typography.headlineMedium)
+                    Text(
+                        if (currentUser.role == UserRole.ADMIN) "ADMINISTRATEUR" else "AGENT DE POINTAGE",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = extras.orangeAccent
+                    )
+                }
+            }
         }
         item {
-            SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding), highlighted = true) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceMD)) {
-                    EmployeeAvatar(currentUser.fullName, size = Dimens.AvatarSizeLg)
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXS)) {
-                        Text(currentUser.fullName, style = MaterialTheme.typography.titleLarge)
-                        Text(currentUser.email, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                        Text(currentUser.jobTitle, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                        StatChip(
-                            icon = Icons.Outlined.Person,
-                            text = if (currentUser.role == UserRole.ADMIN) "Administrateur" else "Agent",
-                            containerColor = if (currentUser.role == UserRole.ADMIN) extras.orangeLight else extras.greenLight,
-                            contentColor = if (currentUser.role == UserRole.ADMIN) extras.orangeAccent else extras.greenAccent,
-                            compact = true
+            SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceLG)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceSM), verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.Icon(Icons.Outlined.Person, contentDescription = null, tint = extras.orangeAccent)
+                        Text("Informations personnelles", style = MaterialTheme.typography.titleMedium)
+                    }
+                    FormField("Prenom", firstName, { firstName = it })
+                    FormField("Nom", lastName, { lastName = it })
+                    FormField("Fonction / Poste", jobTitle, { jobTitle = it })
+                    FormField("Email (identifiant)", currentUser.email, {}, enabled = false)
+                }
+            }
+        }
+        item {
+            SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceLG)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceSM), verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.Icon(Icons.Outlined.Lock, contentDescription = null, tint = extras.orangeAccent)
+                        Text("Securite", style = MaterialTheme.typography.titleMedium)
+                    }
+                    Text("Changer le mot de passe", style = MaterialTheme.typography.bodyMedium)
+                    FormField("Mot de passe actuel", currentPassword, { currentPassword = it })
+                    FormField("Nouveau mot de passe", newPassword, { newPassword = it }, placeholder = "Minimum 6 caracteres")
+                    Surface(
+                        onClick = {
+                            scope.launch {
+                                val result = authRepository.updateProfile(
+                                    currentUser = currentUser,
+                                    firstName = firstName,
+                                    lastName = lastName,
+                                    jobTitle = jobTitle,
+                                    currentPassword = currentPassword,
+                                    newPassword = newPassword
+                                )
+                                message = if (result.success) "Profil mis a jour." else result.error
+                            }
+                        },
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(
+                            text = "Mettre a jour le mot de passe",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            style = MaterialTheme.typography.labelLarge
                         )
                     }
                 }
@@ -101,186 +140,107 @@ fun SettingsScreen(
         }
         item {
             SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                Text("Mon profil", style = MaterialTheme.typography.titleLarge)
-                Spacer(modifier = Modifier.height(Dimens.SpaceMD))
-                PrimaryButton("Modifier le profil", { activeSheet = SettingsSheet.PROFILE }, variant = ButtonVariant.GHOST)
-                Spacer(modifier = Modifier.height(Dimens.SpaceSM))
-                PrimaryButton("Changer le mot de passe", {
-                    currentPassword = ""
-                    newPassword = ""
-                    activeSheet = SettingsSheet.PASSWORD
-                }, variant = ButtonVariant.GHOST)
-                message?.let {
-                    Spacer(modifier = Modifier.height(Dimens.SpaceSM))
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceLG)) {
+                    Text("SESSION", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Mode sombre", style = MaterialTheme.typography.bodyLarge)
+                        Switch(checked = darkMode, onCheckedChange = { darkMode = it })
+                    }
+                    Surface(
+                        onClick = {
+                            scope.launch {
+                                authRepository.logout()
+                                onLoggedOut()
+                            }
+                        },
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceSM),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            androidx.compose.material3.Icon(Icons.Outlined.Logout, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            Text("Deconnexion", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
                 }
             }
         }
         if (currentUser.role == UserRole.ADMIN) {
             item {
                 SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                    Text("Gestion des utilisateurs", style = MaterialTheme.typography.titleLarge)
-                    Spacer(modifier = Modifier.height(Dimens.SpaceMD))
-                    PrimaryButton(
-                        label = "Nouvel utilisateur",
-                        onClick = {
-                            createFirstName = ""
-                            createLastName = ""
-                            createEmail = ""
-                            createJobTitle = ""
-                            createPassword = ""
-                            createRole = UserRole.AGENT
-                            activeSheet = SettingsSheet.CREATE_USER
-                        },
-                        variant = ButtonVariant.GHOST
-                    )
-                    Spacer(modifier = Modifier.height(Dimens.SpaceLG))
-                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceMD)) {
-                        users.filter { it.id != currentUser.id }.forEach { other ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceMD)) {
-                                EmployeeAvatar(other.fullName)
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(other.fullName, style = MaterialTheme.typography.titleMedium)
-                                    Text("${other.email} • ${other.jobTitle}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                                }
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceSM)) {
-                                PrimaryButton(
-                                    label = if (other.isActive) "Desactiver" else "Reactiver",
-                                    onClick = { scope.launch { authRepository.toggleUserActive(currentUser, other.id) } },
-                                    modifier = Modifier.weight(1f),
-                                    variant = ButtonVariant.GHOST
-                                )
-                                PrimaryButton(
-                                    label = "Supprimer",
-                                    onClick = { scope.launch { authRepository.deleteUser(currentUser, other.id) } },
-                                    modifier = Modifier.weight(1f),
-                                    variant = ButtonVariant.GHOST
-                                )
-                            }
+                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceLG)) {
+                        Text("Administration", style = MaterialTheme.typography.titleMedium)
+                        onOpenUserManagement?.let {
+                            AdminLink("Gestion Utilisateurs", onClick = it)
+                        }
+                        onOpenRecurringAbsences?.let {
+                            AdminLink("Absences Recurrentes", onClick = it)
                         }
                     }
                 }
             }
         }
-        item {
-            SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                Text("Session", style = MaterialTheme.typography.titleLarge)
-                Spacer(modifier = Modifier.height(Dimens.SpaceMD))
-                PrimaryButton(
-                    label = "Se deconnecter",
-                    onClick = {
-                        scope.launch {
-                            authRepository.logout()
-                            onLoggedOut()
-                        }
-                    },
-                    variant = ButtonVariant.ORANGE
+        message?.let {
+            item {
+                Text(
+                    text = it,
+                    modifier = Modifier.padding(horizontal = horizontalPadding),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
         item {
-            SectionCard(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                Text("Developpeur", style = MaterialTheme.typography.titleLarge)
-                Spacer(modifier = Modifier.height(Dimens.SpaceSM))
-                Text("A. A. Djafar", style = MaterialTheme.typography.titleMedium)
-                Text("Cadre informaticien au CRFC", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                Text("djafar@crfc.cm", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+            Surface(
+                onClick = {
+                    scope.launch {
+                        val result = authRepository.updateProfile(currentUser, firstName, lastName, jobTitle)
+                        message = if (result.success) "Modifications enregistrees." else result.error
+                    }
+                },
+                color = extras.orangeAccent,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.padding(horizontal = horizontalPadding)
+            ) {
+                Text(
+                    text = "Enregistrer les modifications",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
         item { Spacer(modifier = Modifier.navigationBarsPadding()) }
     }
+}
 
-    if (activeSheet != null) {
-        ModalBottomSheet(onDismissRequest = { activeSheet = null }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = horizontalPadding, vertical = Dimens.SpaceLG),
-                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceLG)
-            ) {
-                when (activeSheet) {
-                    SettingsSheet.PROFILE -> {
-                        BottomSheetHeader("Modifier le profil", onClose = { activeSheet = null })
-                        FormField("Prenom", firstName, { firstName = it })
-                        FormField("Nom", lastName, { lastName = it })
-                        FormField("Fonction", jobTitle, { jobTitle = it })
-                        PrimaryButton(
-                            label = "Enregistrer",
-                            onClick = {
-                                scope.launch {
-                                    val result = authRepository.updateProfile(currentUser, firstName, lastName, jobTitle)
-                                    message = if (result.success) "Profil mis a jour." else result.error
-                                    if (result.success) activeSheet = null
-                                }
-                            }
-                        )
-                    }
-                    SettingsSheet.PASSWORD -> {
-                        BottomSheetHeader("Changer le mot de passe", onClose = { activeSheet = null })
-                        FormField("Mot de passe actuel", currentPassword, { currentPassword = it })
-                        FormField("Nouveau mot de passe", newPassword, { newPassword = it })
-                        PrimaryButton(
-                            label = "Modifier",
-                            onClick = {
-                                scope.launch {
-                                    val result = authRepository.updateProfile(
-                                        currentUser,
-                                        currentUser.firstName,
-                                        currentUser.lastName,
-                                        currentUser.jobTitle,
-                                        currentPassword,
-                                        newPassword
-                                    )
-                                    message = if (result.success) "Mot de passe modifie." else result.error
-                                    if (result.success) activeSheet = null
-                                }
-                            }
-                        )
-                    }
-                    SettingsSheet.CREATE_USER -> {
-                        BottomSheetHeader("Nouvel utilisateur", onClose = { activeSheet = null })
-                        FormField("Prenom", createFirstName, { createFirstName = it })
-                        FormField("Nom", createLastName, { createLastName = it })
-                        FormField("Email", createEmail, { createEmail = it })
-                        FormField("Fonction", createJobTitle, { createJobTitle = it })
-                        FormField("Mot de passe", createPassword, { createPassword = it })
-                        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceSM)) {
-                            PrimaryButton(
-                                label = if (createRole == UserRole.AGENT) "Agent selectionne" else "Agent",
-                                onClick = { createRole = UserRole.AGENT },
-                                modifier = Modifier.weight(1f),
-                                variant = if (createRole == UserRole.AGENT) ButtonVariant.NAVY else ButtonVariant.GHOST
-                            )
-                            PrimaryButton(
-                                label = if (createRole == UserRole.ADMIN) "Admin selectionne" else "Admin",
-                                onClick = { createRole = UserRole.ADMIN },
-                                modifier = Modifier.weight(1f),
-                                variant = if (createRole == UserRole.ADMIN) ButtonVariant.NAVY else ButtonVariant.GHOST
-                            )
-                        }
-                        PrimaryButton(
-                            label = "Creer l'utilisateur",
-                            onClick = {
-                                scope.launch {
-                                    val result = authRepository.createUser(
-                                        currentUser,
-                                        createFirstName,
-                                        createLastName,
-                                        createEmail,
-                                        createJobTitle,
-                                        createPassword,
-                                        createRole
-                                    )
-                                    message = if (result.success) "Utilisateur cree." else result.error
-                                    if (result.success) activeSheet = null
-                                }
-                            }
-                        )
-                    }
-                    null -> Unit
-                }
-            }
+@Composable
+private fun AdminLink(label: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceSM),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            androidx.compose.material3.Icon(Icons.Outlined.AdminPanelSettings, contentDescription = null)
+            Text(label, style = MaterialTheme.typography.labelLarge)
         }
     }
 }

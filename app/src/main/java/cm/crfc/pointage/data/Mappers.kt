@@ -3,6 +3,7 @@ package cm.crfc.pointage.data
 import cm.crfc.pointage.data.local.AbsenceEntryEntity
 import cm.crfc.pointage.data.local.AbsenceReasonEntity
 import cm.crfc.pointage.data.local.EmployeeEntity
+import cm.crfc.pointage.data.local.ExportFileEntity
 import cm.crfc.pointage.data.local.LateEntryEntity
 import cm.crfc.pointage.data.local.RecurringAbsenceEntity
 import cm.crfc.pointage.data.local.ReportBundleEntity
@@ -12,6 +13,8 @@ import cm.crfc.pointage.model.AbsenceEntry
 import cm.crfc.pointage.model.AbsenceReason
 import cm.crfc.pointage.model.DailyReport
 import cm.crfc.pointage.model.Employee
+import cm.crfc.pointage.model.ExportFileRecord
+import cm.crfc.pointage.model.ExportFileType
 import cm.crfc.pointage.model.LateEntry
 import cm.crfc.pointage.model.RecurringAbsence
 import cm.crfc.pointage.model.ReportStatus
@@ -49,6 +52,22 @@ fun EmployeeEntity.toDomain() = Employee(
     fullName = fullName,
     firstName = firstName,
     lastName = lastName,
+    jobTitle = jobTitle,
+    department = department,
+    isActive = isActive,
+    needsReview = needsReview,
+    importSource = importSource,
+    importedAt = importedAt,
+    createdAt = createdAt
+)
+
+fun Employee.toEntity() = EmployeeEntity(
+    id = id,
+    fullName = fullName,
+    firstName = firstName,
+    lastName = lastName,
+    jobTitle = jobTitle,
+    department = department,
     isActive = isActive,
     needsReview = needsReview,
     importSource = importSource,
@@ -106,3 +125,26 @@ fun DailyReport.toEntity() = ReportEntity(
     updatedAt = updatedAt
 )
 
+fun ExportFileEntity.toDomain() = ExportFileRecord(
+    id = id,
+    type = ExportFileType.valueOf(type),
+    fileName = fileName,
+    filePath = filePath,
+    sizeBytes = sizeBytes,
+    createdAt = createdAt,
+    reportDate = reportDate,
+    periodStart = periodStart,
+    periodEnd = periodEnd
+)
+
+fun ExportFileRecord.toEntity() = ExportFileEntity(
+    id = id,
+    type = type.name,
+    fileName = fileName,
+    filePath = filePath,
+    sizeBytes = sizeBytes,
+    createdAt = createdAt,
+    reportDate = reportDate,
+    periodStart = periodStart,
+    periodEnd = periodEnd
+)

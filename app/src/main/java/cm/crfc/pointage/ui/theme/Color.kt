@@ -4,26 +4,26 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-val NavyPrimary = Color(0xFF1E3A5F)
-val NavyDark = Color(0xFF152D4A)
-val NavyLight = Color(0xFF2A4F7C)
+val NavyPrimary = Color(0xFF234C88)
+val NavyDark = Color(0xFF1A3661)
+val NavyLight = Color(0xFF3A649A)
 
-val OrangeAccent = Color(0xFFF97316)
-val OrangeLight = Color(0xFFFFF0E6)
-val PurpleAccent = Color(0xFF7C3AED)
-val PurpleLight = Color(0xFFF3EEFF)
-val GreenAccent = Color(0xFF16A34A)
-val GreenLight = Color(0xFFEDFCF2)
-val AmberWarning = Color(0xFFF59E0B)
-val AmberLight = Color(0xFFFFFBEB)
+val OrangeAccent = Color(0xFFD28A1C)
+val OrangeLight = Color(0xFFF7E8CF)
+val PurpleAccent = Color(0xFF8794A6)
+val PurpleLight = Color(0xFFEFF2F5)
+val GreenAccent = Color(0xFF7A9A60)
+val GreenLight = Color(0xFFE6EFDB)
+val AmberWarning = Color(0xFFE08D2D)
+val AmberLight = Color(0xFFFBF0DC)
 
-val Background = Color(0xFFF1F3F7)
+val Background = Color(0xFFF2F6EA)
 val Surface = Color(0xFFFFFFFF)
-val TextPrimary = Color(0xFF111827)
-val TextSecondary = Color(0xFF6B7280)
+val TextPrimary = Color(0xFF31343A)
+val TextSecondary = Color(0xFF7B7E80)
 val TextOnPrimary = Color(0xFFFFFFFF)
-val Divider = Color(0xFFE5E7EB)
-val AvatarBg = Color(0xFFE8ECF2)
+val Divider = Color(0xFFDCE6D1)
+val AvatarBg = Color(0xFFF2EEE6)
 
 @Immutable
 data class CrfcUiExtras(
