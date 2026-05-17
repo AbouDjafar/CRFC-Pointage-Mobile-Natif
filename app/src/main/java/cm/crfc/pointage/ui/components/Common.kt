@@ -217,7 +217,11 @@ fun CrfcCard(
 
 @Composable
 fun CountBadge(value: Int, color: Color = MaterialTheme.colorScheme.primary) {
-    val animatedColor by animateColorAsState(color, tween(220), label = "countBadgeColor")
+    val animatedColor by animateColorAsState(
+        targetValue = color,
+        animationSpec = tween(220),
+        label = "countBadgeColor"
+    )
     Surface(
         shape = CircleShape,
         color = animatedColor.copy(alpha = 0.14f)
@@ -236,7 +240,11 @@ fun CountBadge(value: Int, color: Color = MaterialTheme.colorScheme.primary) {
 
 @Composable
 fun StatusBadge(text: String, color: Color) {
-    val animatedColor by animateColorAsState(color, tween(220), label = "statusBadgeColor")
+    val animatedColor by animateColorAsState(
+        targetValue = color,
+        animationSpec = tween(220),
+        label = "statusBadgeColor"
+    )
     Surface(
         shape = RoundedCornerShape(999.dp),
         color = animatedColor.copy(alpha = 0.16f)
@@ -430,7 +438,11 @@ fun ClickRow(
 
 @Composable
 fun StatPill(icon: ImageVector, label: String, color: Color) {
-    val animatedColor by animateColorAsState(color, tween(220), label = "statPillColor")
+    val animatedColor by animateColorAsState(
+        targetValue = color,
+        animationSpec = tween(220),
+        label = "statPillColor"
+    )
     Surface(color = animatedColor.copy(alpha = 0.14f), shape = RoundedCornerShape(16.dp)) {
         Row(
             modifier = Modifier
