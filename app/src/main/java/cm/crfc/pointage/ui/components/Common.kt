@@ -1,15 +1,10 @@
 package cm.crfc.pointage.ui.components
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -86,15 +81,6 @@ fun HeaderCard(
         animationSpec = tween(durationMillis = 420),
         label = "headerOffset"
     )
-    val patternDrift by rememberInfiniteTransition(label = "headerPattern").animateFloat(
-        initialValue = -10f,
-        targetValue = 10f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 7000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "patternDrift"
-    )
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -112,10 +98,7 @@ fun HeaderCard(
                 contentDescription = null,
                 modifier = Modifier
                     .matchParentSize()
-                    .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
-                    .graphicsLayer {
-                        translationY = patternDrift
-                    },
+                    .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
                 contentScale = ContentScale.Crop,
                 alpha = 0.12f
             )
@@ -217,14 +200,9 @@ fun CrfcCard(
 
 @Composable
 fun CountBadge(value: Int, color: Color = MaterialTheme.colorScheme.primary) {
-    val animatedColor by animateColorAsState(
-        targetValue = color,
-        animationSpec = tween(220),
-        label = "countBadgeColor"
-    )
     Surface(
         shape = CircleShape,
-        color = animatedColor.copy(alpha = 0.14f)
+        color = color.copy(alpha = 0.14f)
     ) {
         Text(
             text = value.toString(),
@@ -232,7 +210,7 @@ fun CountBadge(value: Int, color: Color = MaterialTheme.colorScheme.primary) {
                 .animateContentSize()
                 .padding(horizontal = 7.dp, vertical = 3.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = animatedColor,
+            color = color,
             fontWeight = FontWeight.Bold
         )
     }
@@ -240,14 +218,9 @@ fun CountBadge(value: Int, color: Color = MaterialTheme.colorScheme.primary) {
 
 @Composable
 fun StatusBadge(text: String, color: Color) {
-    val animatedColor by animateColorAsState(
-        targetValue = color,
-        animationSpec = tween(220),
-        label = "statusBadgeColor"
-    )
     Surface(
         shape = RoundedCornerShape(999.dp),
-        color = animatedColor.copy(alpha = 0.16f)
+        color = color.copy(alpha = 0.16f)
     ) {
         Text(
             text = text,
@@ -255,7 +228,7 @@ fun StatusBadge(text: String, color: Color) {
                 .animateContentSize()
                 .padding(horizontal = 10.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = animatedColor,
+            color = color,
             fontWeight = FontWeight.Bold
         )
     }
@@ -438,12 +411,7 @@ fun ClickRow(
 
 @Composable
 fun StatPill(icon: ImageVector, label: String, color: Color) {
-    val animatedColor by animateColorAsState(
-        targetValue = color,
-        animationSpec = tween(220),
-        label = "statPillColor"
-    )
-    Surface(color = animatedColor.copy(alpha = 0.14f), shape = RoundedCornerShape(16.dp)) {
+    Surface(color = color.copy(alpha = 0.14f), shape = RoundedCornerShape(16.dp)) {
         Row(
             modifier = Modifier
                 .animateContentSize()
@@ -451,8 +419,8 @@ fun StatPill(icon: ImageVector, label: String, color: Color) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Icon(icon, contentDescription = null, tint = animatedColor, modifier = Modifier.size(14.dp))
-            Text(label, color = animatedColor, style = MaterialTheme.typography.labelMedium)
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
+            Text(label, color = color, style = MaterialTheme.typography.labelMedium)
         }
     }
 }
